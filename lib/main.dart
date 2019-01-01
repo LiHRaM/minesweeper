@@ -4,7 +4,7 @@ import 'board.dart';
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
-  final String title = "Minesweeper";
+  final String title = 'Minesweeper';
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -26,13 +26,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
+  Board myBoard = Board(rows: 7, columns: 7, mines: 6);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Board(rows: 5, columns: 5, mines: 6),
+      body: myBoard,
     );
   }
 }

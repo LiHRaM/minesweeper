@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vibrate/vibrate.dart';
 import 'dart:math';
 import 'tile.dart';
 
@@ -10,44 +9,67 @@ class Board extends StatefulWidget {
   final int mines;
 
   @override
-  _BoardState createState() => _BoardState(rows, columns, mines);
+  _BoardState createState() => _BoardState();
 }
 
 class _BoardState extends State<Board> {
-  _BoardState(this.rows, this.columns, this.mines) {
-    tiles = new List.generate(rows * columns, (int index) => TileInfo());
+  List<TileInfo> tiles;
+  bool gameOver = false;
+
+  @override
+  void initState() {
+    _resetBoard();
+    super.initState();
+  }
+
+  void _resetBoard() {
+    setState(() => gameOver = false);
+    tiles = new List.generate(
+        widget.rows * widget.columns, (int index) => TileInfo(index));
     var rng = new Random();
-    for (int i = 0; i < mines; i++) {
-      int ix = rng.nextInt(rows * columns);
+    for (int i = 0; i < widget.mines; i++) {
+      int ix = rng.nextInt(widget.rows * widget.columns);
 
       if (tiles[ix].isMine == false) {
         this.tiles[ix].isMine = true;
-        updateNeighbors(ix);
+        _onNeighbors(ix, _tryUpdate);
       } else {
         i--;
       }
     }
   }
-  List<TileInfo> tiles;
-  bool gameOver = false;
-  int rows;
-  int columns;
-  int mines;
 
-  void updateNeighbors(int ix) {
-    tryUpdate(getIx(ix, BoardDirection.Up));
-    tryUpdate(getIx(ix, BoardDirection.Down));
-    tryUpdate(getIx(ix, BoardDirection.Left));
-    tryUpdate(getIx(ix, BoardDirection.Right));
-
-    tryUpdate(getIx(getIx(ix, BoardDirection.Up), BoardDirection.Left));
-    tryUpdate(getIx(getIx(ix, BoardDirection.Up), BoardDirection.Right));
-    tryUpdate(getIx(getIx(ix, BoardDirection.Down), BoardDirection.Left));
-    tryUpdate(getIx(getIx(ix, BoardDirection.Down), BoardDirection.Right));
+  void probe(int ix) {
+    var tile = tiles[ix];
+    if (tile.mode == TileMode.Initial) {
+      setState(() {
+        if (tile.isMine) {
+          tile.mode = TileMode.Exploded;
+          gameOver = true;
+        } else {
+          tile.mode = TileMode.Probed;
+          if (tile.mineCount == 0) {
+            _onNeighbors(ix, probe);
+          }
+        }
+      });
+    }
   }
 
-  void tryUpdate(int ix) {
-    if (ix < 0 || ix >= rows * columns) {
+  void _onNeighbors(int ix, void Function(int) callback) {
+    callback(getIx(ix, BoardDirection.Up));
+    callback(getIx(ix, BoardDirection.Down));
+    callback(getIx(ix, BoardDirection.Left));
+    callback(getIx(ix, BoardDirection.Right));
+
+    callback(getIx(getIx(ix, BoardDirection.Up), BoardDirection.Left));
+    callback(getIx(getIx(ix, BoardDirection.Up), BoardDirection.Right));
+    callback(getIx(getIx(ix, BoardDirection.Down), BoardDirection.Left));
+    callback(getIx(getIx(ix, BoardDirection.Down), BoardDirection.Right));
+  }
+
+  void _tryUpdate(int ix) {
+    if (ix < 0 || ix >= widget.rows * widget.columns) {
       return;
     }
 
@@ -57,16 +79,16 @@ class _BoardState extends State<Board> {
   int getIx(int ix, BoardDirection dir) {
     switch (dir) {
       case BoardDirection.Up:
-        return ix - columns;
+        return ix - widget.columns;
       case BoardDirection.Down:
-        return ix + columns;
+        return ix + widget.columns;
       case BoardDirection.Left:
-        if (ix % rows == 0) {
+        if (ix % widget.rows == 0) {
           return -1;
         }
         return ix - 1;
       case BoardDirection.Right:
-        if (ix % rows == columns - 1) {
+        if (ix % widget.rows == widget.columns - 1) {
           return -1;
         }
         return ix + 1;
@@ -76,42 +98,46 @@ class _BoardState extends State<Board> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      child: getMineField(),
+      child: Column(children: [
+        Expanded(child: _getMineField()),
+        _buildResetButton(),
+      ]),
     );
   }
 
-  Widget getMineField() {
+  Widget _buildResetButton() {
+    return IconButton(
+      icon: Icon(Icons.autorenew),
+      onPressed: () {
+        setState(() => _resetBoard());
+      },
+    );
+  }
+
+  Widget _getMineField() {
     return Column(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: getRows(),
+      children: _buildRows(),
     );
   }
 
-  List<Widget> getRows() {
-    List<Widget> rows = new List(this.rows);
-    for (int i = 0; i < this.rows; i++) {
-      int rowStart = i * this.rows;
-      var list = this.tiles.sublist(rowStart, rowStart + this.columns);
-      rows[i] = buildRow(list
+  List<Widget> _buildRows() {
+    List<Widget> rows = new List(widget.rows);
+    for (int i = 0; i < widget.rows; i++) {
+      int rowStart = i * widget.rows;
+      var list = this.tiles.sublist(rowStart, rowStart + widget.columns);
+      rows[i] = _buildRow(list
           .map((TileInfo info) => Tile(
               info: info,
               gameOver: gameOver,
-              onGameOver: _handleGameOverChanged))
+              onProbe: probe))
           .toList());
     }
     return rows;
   }
 
-  void _handleGameOverChanged(bool gameOver) {
-    setState(() {
-      this.gameOver = true;
-    });
-
-    Vibrate.vibrate();
-  }
-
-  Widget buildRow(List<Tile> tiles) {
+  Widget _buildRow(List<Tile> tiles) {
     return Row(
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
