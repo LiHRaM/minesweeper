@@ -2,6 +2,64 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'tile.dart';
 
+@visibleForTesting
+class Tiles {
+  Tiles(this.info, this._rows, this._columns);
+  final List<TileInfo> info;
+  final int _rows;
+  final int _columns;
+
+  /// Performs the provided function on all valid neighbors.
+  @visibleForTesting
+  void onNeighbors(int ix, void Function(int) callback) {
+    List<int> neighbors = List();
+
+    neighbors.addAll([
+      getIx(ix, BoardDirection.Up),
+      getIx(ix, BoardDirection.Down),
+      getIx(ix, BoardDirection.Left),
+      getIx(ix, BoardDirection.Right),
+      getIx(getIx(ix, BoardDirection.Up), BoardDirection.Left),
+      getIx(getIx(ix, BoardDirection.Up), BoardDirection.Right),
+      getIx(getIx(ix, BoardDirection.Down), BoardDirection.Left),
+      getIx(getIx(ix, BoardDirection.Down), BoardDirection.Right),
+    ]);
+
+    neighbors.forEach((int val) {
+      if (val >= 0 && val < info.length) callback(val);
+    });
+  }
+
+  /// Gets the index of a tile in a specific direction.
+  /// Returns -1 if it is out of bounds.
+  @visibleForTesting
+  int getIx(int ix, BoardDirection dir) {
+    switch (dir) {
+      case BoardDirection.Up:
+        ix -= _columns;
+        break;
+      case BoardDirection.Down:
+        ix += _columns;
+        break;
+      case BoardDirection.Left:
+        if (ix % _rows == 0) {
+          ix = -1;
+        }
+        ix--;
+        break;
+      case BoardDirection.Right:
+        if (ix % _rows == _columns - 1) {
+          ix = -1;
+        }
+        ix++;
+    }
+    if (ix >= info.length || ix < 0)
+      return -1;
+    else
+      return ix;
+  }
+}
+
 class Board extends StatefulWidget {
   Board({Key key, this.rows, this.columns, this.mines}) : super(key: key);
   final int rows;
@@ -13,7 +71,7 @@ class Board extends StatefulWidget {
 }
 
 class _BoardState extends State<Board> {
-  List<TileInfo> tiles;
+  Tiles tiles;
   bool gameOver = false;
 
   @override
@@ -22,25 +80,34 @@ class _BoardState extends State<Board> {
     super.initState();
   }
 
-  void _resetBoard() {
-    setState(() => gameOver = false);
-    tiles = new List.generate(
-        widget.rows * widget.columns, (int index) => TileInfo(index));
+  List<TileInfo> _generateTiles() {
+    return List.generate(widget.rows * widget.columns, (int index) {
+      return TileInfo(index);
+    });
+  }
+
+  void _setMines() {
     var rng = new Random();
     for (int i = 0; i < widget.mines; i++) {
       int ix = rng.nextInt(widget.rows * widget.columns);
 
-      if (tiles[ix].isMine == false) {
-        this.tiles[ix].isMine = true;
-        _onNeighbors(ix, _tryUpdate);
+      if (tiles.info[ix].isMine == false) {
+        tiles.info[ix].isMine = true;
+        tiles.onNeighbors(ix, _tryUpdate);
       } else {
         i--;
       }
     }
   }
 
-  void probe(int ix) {
-    var tile = tiles[ix];
+  void _resetBoard() {
+    setState(() => gameOver = false);
+    tiles = Tiles(_generateTiles(), widget.rows, widget.columns);
+    _setMines();
+  }
+
+  void _probe(int ix) {
+    var tile = tiles.info[ix];
     if (tile.mode == TileMode.Initial) {
       setState(() {
         if (tile.isMine) {
@@ -49,23 +116,11 @@ class _BoardState extends State<Board> {
         } else {
           tile.mode = TileMode.Probed;
           if (tile.mineCount == 0) {
-            _onNeighbors(ix, probe);
+            tiles.onNeighbors(ix, _probe);
           }
         }
       });
     }
-  }
-
-  void _onNeighbors(int ix, void Function(int) callback) {
-    callback(getIx(ix, BoardDirection.Up));
-    callback(getIx(ix, BoardDirection.Down));
-    callback(getIx(ix, BoardDirection.Left));
-    callback(getIx(ix, BoardDirection.Right));
-
-    callback(getIx(getIx(ix, BoardDirection.Up), BoardDirection.Left));
-    callback(getIx(getIx(ix, BoardDirection.Up), BoardDirection.Right));
-    callback(getIx(getIx(ix, BoardDirection.Down), BoardDirection.Left));
-    callback(getIx(getIx(ix, BoardDirection.Down), BoardDirection.Right));
   }
 
   void _tryUpdate(int ix) {
@@ -73,26 +128,7 @@ class _BoardState extends State<Board> {
       return;
     }
 
-    tiles[ix].mineCount++;
-  }
-
-  int getIx(int ix, BoardDirection dir) {
-    switch (dir) {
-      case BoardDirection.Up:
-        return ix - widget.columns;
-      case BoardDirection.Down:
-        return ix + widget.columns;
-      case BoardDirection.Left:
-        if (ix % widget.rows == 0) {
-          return -1;
-        }
-        return ix - 1;
-      case BoardDirection.Right:
-        if (ix % widget.rows == widget.columns - 1) {
-          return -1;
-        }
-        return ix + 1;
-    }
+    tiles.info[ix].mineCount++;
   }
 
   @override
@@ -125,16 +161,16 @@ class _BoardState extends State<Board> {
   List<Widget> _buildRows() {
     List<Widget> rows = new List(widget.rows);
     for (int i = 0; i < widget.rows; i++) {
-      int rowStart = i * widget.rows;
-      var list = this.tiles.sublist(rowStart, rowStart + widget.columns);
-      rows[i] = _buildRow(list
-          .map((TileInfo info) => Tile(
-              info: info,
-              gameOver: gameOver,
-              onProbe: probe))
+      rows[i] = _buildRow(_getRow(i * widget.rows)
+          .map((TileInfo info) =>
+              Tile(info: info, gameOver: gameOver, onProbe: _probe))
           .toList());
     }
     return rows;
+  }
+
+  List<TileInfo> _getRow(int rowStart) {
+    return tiles.info.sublist(rowStart, rowStart + widget.columns);
   }
 
   Widget _buildRow(List<Tile> tiles) {
