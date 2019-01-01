@@ -16,14 +16,14 @@ class Tiles {
     List<int> neighbors = List();
 
     neighbors.addAll([
-      getIx(ix, BoardDirection.Up),
-      getIx(ix, BoardDirection.Down),
-      getIx(ix, BoardDirection.Left),
-      getIx(ix, BoardDirection.Right),
-      getIx(getIx(ix, BoardDirection.Up), BoardDirection.Left),
-      getIx(getIx(ix, BoardDirection.Up), BoardDirection.Right),
-      getIx(getIx(ix, BoardDirection.Down), BoardDirection.Left),
-      getIx(getIx(ix, BoardDirection.Down), BoardDirection.Right),
+      getIx(ix, BoardDirection.up),
+      getIx(ix, BoardDirection.down),
+      getIx(ix, BoardDirection.left),
+      getIx(ix, BoardDirection.right),
+      getIx(getIx(ix, BoardDirection.up), BoardDirection.left),
+      getIx(getIx(ix, BoardDirection.up), BoardDirection.right),
+      getIx(getIx(ix, BoardDirection.down), BoardDirection.left),
+      getIx(getIx(ix, BoardDirection.down), BoardDirection.right),
     ]);
 
     neighbors.forEach((int val) {
@@ -36,22 +36,22 @@ class Tiles {
   @visibleForTesting
   int getIx(int ix, BoardDirection dir) {
     switch (dir) {
-      case BoardDirection.Up:
+      case BoardDirection.up:
         ix -= _columns;
         break;
-      case BoardDirection.Down:
+      case BoardDirection.down:
         ix += _columns;
         break;
-      case BoardDirection.Left:
+      case BoardDirection.left:
         if (ix % _rows == 0) {
           ix = -1;
         }
         ix--;
         break;
-      case BoardDirection.Right:
+      case BoardDirection.right:
         if (ix % _rows == _rows - 1) {
           ix = -1;
-        } else  {
+        } else {
           ix++;
         }
     }
@@ -110,14 +110,14 @@ class _BoardState extends State<Board> {
 
   void _probe(int ix) {
     var tile = tiles.info[ix];
-    if (tile.mode == TileMode.Initial) {
+    if (tile.mode == TileMode.initial) {
       setState(() {
         if (tile.isMine) {
-          tile.mode = TileMode.Exploded;
+          tile.mode = TileMode.exploded;
           Vibrate.vibrate();
           gameOver = true;
         } else {
-          tile.mode = TileMode.Probed;
+          tile.mode = TileMode.probed;
           if (tile.mineCount == 0) {
             tiles.onNeighbors(ix, _probe);
           }
@@ -186,8 +186,8 @@ class _BoardState extends State<Board> {
 }
 
 enum BoardDirection {
-  Up,
-  Down,
-  Left,
-  Right,
+  up,
+  down,
+  left,
+  right,
 }

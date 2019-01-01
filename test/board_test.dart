@@ -18,20 +18,20 @@ void main() {
     group("getIx tests", () {
       var tiles = Tiles(infoStub(9), 3, 3);
       test("Top left corner up", () {
-        var ix = tiles.getIx(0, BoardDirection.Up);
+        var ix = tiles.getIx(0, BoardDirection.up);
         expect(ix, -1);
       });
       test("Top left corner left", () {
-        var ix = tiles.getIx(0, BoardDirection.Left);
+        var ix = tiles.getIx(0, BoardDirection.left);
         expect(ix, -1);
       });
 
       test("Top right corner up", () {
-        var ix = tiles.getIx(2, BoardDirection.Up);
+        var ix = tiles.getIx(2, BoardDirection.up);
         expect(ix, -1);
       });
       test("Top right corner right", () {
-        var ix = tiles.getIx(2, BoardDirection.Right);
+        var ix = tiles.getIx(2, BoardDirection.right);
         expect(ix, -1);
       });
     });
