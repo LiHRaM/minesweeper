@@ -75,6 +75,7 @@ class Board extends StatefulWidget {
 class _BoardState extends State<Board> {
   Tiles tiles;
   bool gameOver = false;
+  bool won = false;
 
   @override
   void initState() {
@@ -93,8 +94,8 @@ class _BoardState extends State<Board> {
     for (int i = 0; i < widget.mines; i++) {
       int ix = rng.nextInt(widget.rows * widget.columns);
 
-      if (tiles.info[ix].isMine == false) {
-        tiles.info[ix].isMine = true;
+      if (tiles.info[ix].mode == TileMode.initial) {
+        tiles.info[ix].mode = TileMode.initialMine;
         tiles.onNeighbors(ix, _tryUpdate);
       } else {
         i--;
@@ -109,13 +110,15 @@ class _BoardState extends State<Board> {
   }
 
   void _probe(int ix) {
+    if (gameOver) return;
+
     var tile = tiles.info[ix];
-    if (tile.mode == TileMode.initial) {
+    if (tile.mode == TileMode.initial || tile.mode == TileMode.initialMine) {
       setState(() {
-        if (tile.isMine) {
-          tile.mode = TileMode.exploded;
-          Vibrate.vibrate();
+        if (tile.mode == TileMode.initialMine) {
+          tile.mode = TileMode.probedMine;
           gameOver = true;
+          Vibrate.vibrate();
         } else {
           tile.mode = TileMode.probed;
           if (tile.mineCount == 0) {

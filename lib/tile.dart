@@ -6,15 +6,16 @@ class TileInfo {
 
   int ix;
   int mineCount = 0;
-  bool isMine = false;
   TileMode mode = TileMode.initial;
 }
 
 enum TileMode {
   initial,
+  initialMine,
   probed,
   flagged,
-  exploded,
+  flaggedMine,
+  probedMine,
 }
 
 class Tile extends StatefulWidget {
@@ -35,48 +36,46 @@ class Tile extends StatefulWidget {
 class _TileState extends State<Tile> {
   @override
   Widget build(BuildContext context) {
-    if (widget.gameOver) {
-      switch (widget.info.mode) {
-        case TileMode.initial:
-        case TileMode.probed:
-          widget.info.mode = TileMode.probed;
-          if (widget.info.isMine) {
-            return buildTile('💣');
-          }
-          return buildTile('${widget.info.mineCount}');
-        case TileMode.flagged:
-          if (widget.info.isMine) {
-            return buildTile('🚩');
-          }
-          return buildTile('✖');
-        case TileMode.exploded:
-          return buildTile('💥');
-      }
-    } else {
-      switch (widget.info.mode) {
-        case TileMode.initial:
-          return buildTile('');
-        case TileMode.probed:
-          if (widget.info.isMine) {
-            return buildTile('💣');
-          }
-          return buildTile('${widget.info.mineCount}');
-        case TileMode.flagged:
-          return buildTile('🚩');
-        case TileMode.exploded:
-          return buildTile('💥');
-      }
+    var g = widget.gameOver;
+
+    switch (widget.info.mode) {
+      empty:
+      case TileMode.initial:
+        return buildTile('');
+      case TileMode.initialMine:
+        if (!g) {
+          continue empty;
+        }
+        return buildTile('💣');
+      case TileMode.probed:
+        return buildTile('${widget.info.mineCount}');
+      case TileMode.flagged:
+        if (!g) {
+          continue flag;
+        }
+        return buildTile('✖');
+      flag:
+      case TileMode.flaggedMine:
+        return buildTile('🚩');
+      case TileMode.probedMine:
+        return buildTile('💥');
     }
   }
 
   Color getBackground() {
+    var g = widget.gameOver;
     switch (widget.info.mode) {
       case TileMode.initial:
+        return Colors.grey[500];
+      case TileMode.initialMine:
+        return Colors.grey[500];
       case TileMode.flagged:
+        return Colors.grey[500];
+      case TileMode.flaggedMine:
         return Colors.grey[500];
       case TileMode.probed:
         return Colors.grey[400];
-      case TileMode.exploded:
+      case TileMode.probedMine:
         return Colors.red;
     }
   }
@@ -103,13 +102,15 @@ class _TileState extends State<Tile> {
     bool vibrate = true;
     switch (widget.info.mode) {
       case TileMode.initial:
+      case TileMode.initialMine:
         setState(() => widget.info.mode = TileMode.flagged);
         break;
       case TileMode.flagged:
+      case TileMode.flaggedMine:
         setState(() => widget.info.mode = TileMode.initial);
         break;
       case TileMode.probed:
-      case TileMode.exploded:
+      case TileMode.probedMine:
         vibrate = false;
         break;
     }
