@@ -1,34 +1,73 @@
 import 'package:flutter/material.dart';
 import 'package:vibrate/vibrate.dart';
 
+class TileInfo {
+  int mineCount = 0;
+  bool isMine = false;
+}
+
 class Tile extends StatefulWidget {
+  Tile({Key key, this.info, this.gameOver, this.onGameOver}) : super(key: key);
+
+  final TileInfo info;
+  final bool gameOver;
+  final ValueChanged<bool> onGameOver;
+
   @override
-  _TileState createState() => _TileState();
+  _TileState createState() => _TileState(info, gameOver);
 }
 
 class _TileState extends State<Tile> {
+  _TileState(this.info, this.gameOver);
+  TileInfo info;
   TileMode tileMode = TileMode.Initial;
-  bool isMine;
-  int mines = 0;
+  final bool gameOver;
 
   @override
   Widget build(BuildContext context) {
-    switch (this.tileMode) {
-      case TileMode.Initial:
-        return buildTile('');
-      case TileMode.Probed:
-        return buildTile('$mines');
-      case TileMode.Flagged:
-        return buildTile('🚩');
+    if (widget.gameOver) {
+      switch (tileMode) {
+        case TileMode.Initial:
+        case TileMode.Probed:
+          tileMode = TileMode.Probed;
+          if (info.isMine) {
+            return buildTile('💣');
+          }
+          return buildTile('${info.mineCount}');
+        case TileMode.Flagged:
+          if (info.isMine) {
+            return buildTile('🚩');
+          }
+          return buildTile('✖');
+        case TileMode.Exploded:
+          return buildTile('💥');
+      }
+    } else {
+      switch (this.tileMode) {
+        case TileMode.Initial:
+          return buildTile('');
+        case TileMode.Probed:
+          if (info.isMine) {
+            return buildTile('💣');
+          }
+          return buildTile('${info.mineCount}');
+        case TileMode.Flagged:
+          return buildTile('🚩');
+        case TileMode.Exploded:
+          return buildTile('💥');
+      }
     }
   }
 
   Color getBackground() {
     switch (this.tileMode) {
-      case TileMode.Initial: case TileMode.Flagged:
+      case TileMode.Initial:
+      case TileMode.Flagged:
         return Colors.grey[500];
       case TileMode.Probed:
         return Colors.grey[400];
+      case TileMode.Exploded:
+        return Colors.red;
     }
   }
 
@@ -52,7 +91,14 @@ class _TileState extends State<Tile> {
 
   void probe() {
     if (this.tileMode == TileMode.Initial) {
-      setState(() => this.tileMode = TileMode.Probed);
+      setState(() {
+        if (info.isMine) {
+          this.tileMode = TileMode.Exploded;
+          widget.onGameOver(true);
+        } else {
+          this.tileMode = TileMode.Probed;
+        }
+      });
     }
   }
 
@@ -66,6 +112,7 @@ class _TileState extends State<Tile> {
         setState(() => this.tileMode = TileMode.Initial);
         break;
       case TileMode.Probed:
+      case TileMode.Exploded:
         vibrate = false;
         break;
     }
@@ -80,4 +127,5 @@ enum TileMode {
   Initial,
   Probed,
   Flagged,
+  Exploded,
 }
