@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:vibrate/vibrate.dart';
 import 'dart:math';
 import 'tile.dart';
 
@@ -48,10 +49,11 @@ class Tiles {
         ix--;
         break;
       case BoardDirection.Right:
-        if (ix % _rows == _columns - 1) {
+        if (ix % _rows == _rows - 1) {
           ix = -1;
+        } else  {
+          ix++;
         }
-        ix++;
     }
     if (ix >= info.length || ix < 0)
       return -1;
@@ -112,6 +114,7 @@ class _BoardState extends State<Board> {
       setState(() {
         if (tile.isMine) {
           tile.mode = TileMode.Exploded;
+          Vibrate.vibrate();
           gameOver = true;
         } else {
           tile.mode = TileMode.Probed;

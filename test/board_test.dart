@@ -4,62 +4,68 @@ import 'package:minesweeper/board.dart';
 import 'package:minesweeper/tile.dart';
 
 void main() {
-  group("Testing tiles class", () {
+  group("Tiles class", () {
     // This group tests the correctness of the onNeighbors function.
     // Specifically, that it behaves correctly in corner cases.
-
-    /**
-     * 0 0 0 
-     * 0 0 0 
-     * 0 0 0 
-     * => 
-     * 0 1 0
-     * 1 1 0
-     * 0 0 0 
-     * 
-     * Is an example of the first method, which tests that only three of the neighbors have been transformed.
-     */
-
-
     List<TileInfo> infoStub(int length) {
       return List.generate(length, (int ix) => TileInfo(ix));
     }
 
-    test('Top right corner', () {
+    List<int> e(Tiles tiles) {
+      return tiles.info.map((var info) => info.mineCount).toList();
+    }
+
+    group("getIx tests", () {
       var tiles = Tiles(infoStub(9), 3, 3);
+      test("Top left corner up", () {
+        var ix = tiles.getIx(0, BoardDirection.Up);
+        expect(ix, -1);
+      });
+      test("Top left corner left", () {
+        var ix = tiles.getIx(0, BoardDirection.Left);
+        expect(ix, -1);
+      });
 
-      tiles.onNeighbors(0, (int ix) => tiles.info[ix].mineCount = 1);
-
-      expect(tiles.info[1].mineCount, 1);
-      expect(tiles.info[3].mineCount, 1);
-      expect(tiles.info[4].mineCount, 1);
+      test("Top right corner up", () {
+        var ix = tiles.getIx(2, BoardDirection.Up);
+        expect(ix, -1);
+      });
+      test("Top right corner right", () {
+        var ix = tiles.getIx(2, BoardDirection.Right);
+        expect(ix, -1);
+      });
     });
 
-    test('Top left corner', () {
-      var tiles = Tiles(infoStub(9), 3, 3);
-      tiles.onNeighbors(2, (int ix) => tiles.info[ix].mineCount = 1);
+    group("onNeighbors tests", () {
+      test('Top left corner', () {
+        var tiles = Tiles(infoStub(9), 3, 3);
 
-      expect(tiles.info[1].mineCount, 1);
-      expect(tiles.info[4].mineCount, 1);
-      expect(tiles.info[5].mineCount, 1);
-    });
+        tiles.onNeighbors(0, (int ix) => tiles.info[ix].mineCount = 1);
 
-    test('Bottom right corner', () {
-      var tiles = Tiles(infoStub(9), 3, 3);
-      tiles.onNeighbors(6, (int ix) => tiles.info[ix].mineCount = 1);
+        expect(e(tiles), [0, 1, 0, 1, 1, 0, 0, 0, 0]);
+      });
 
-      expect(tiles.info[3].mineCount, 1);
-      expect(tiles.info[4].mineCount, 1);
-      expect(tiles.info[7].mineCount, 1);
-    });
+      test('Top right corner', () {
+        var tiles = Tiles(infoStub(9), 3, 3);
 
-    test('Bottom left corner', () {
-      var tiles = Tiles(infoStub(9), 3, 3);
-      tiles.onNeighbors(8, (int ix) => tiles.info[ix].mineCount = 1);
+        tiles.onNeighbors(2, (int ix) => tiles.info[ix].mineCount = 1);
 
-      expect(tiles.info[4].mineCount, 1);
-      expect(tiles.info[5].mineCount, 1);
-      expect(tiles.info[7].mineCount, 1);
+        expect(e(tiles), [0, 1, 0, 0, 1, 1, 0, 0, 0]);
+      });
+
+      test('Bottom left corner', () {
+        var tiles = Tiles(infoStub(9), 3, 3);
+        tiles.onNeighbors(6, (int ix) => tiles.info[ix].mineCount = 1);
+
+        expect(e(tiles), [0, 0, 0, 1, 1, 0, 0, 1, 0]);
+      });
+
+      test('Bottom right corner', () {
+        var tiles = Tiles(infoStub(9), 3, 3);
+        tiles.onNeighbors(8, (int ix) => tiles.info[ix].mineCount = 1);
+
+        expect(e(tiles), [0, 0, 0, 0, 1, 1, 0, 1, 0]);
+      });
     });
   });
 }
