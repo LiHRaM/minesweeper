@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'tile.dart';
 
 void main() => runApp(MyApp());
 
@@ -21,17 +22,17 @@ class HomeScreen extends StatefulWidget {
   final String title;
 
   @override
-  _HomeScreenState createState() => _HomeScreenState();
+  HomeScreenState createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      // body: MineField(rows: 3, columns: 3, mines: 21),
+      body: MineField(rows: 3, columns: 3, mines: 21),
     );
   }
 }
@@ -43,14 +44,23 @@ class MineField extends StatefulWidget {
   final int mines;
 
   @override
-  _MineFieldState createState() => _MineFieldState();
+  MineFieldState createState() => MineFieldState(rows, columns, mines);
 }
 
-class _MineFieldState extends State<MineField> {
-  _MineFieldState() {
-    mineField = new List.filled(widget.rows * widget.columns, 0);
+class MineFieldState extends State<MineField> {
+  MineFieldState(this.rows, this.columns, this.mines) {
+    mineField = new List.filled(rows * columns, 0);
+
+    mineField[0] = 1; // top left
+    mineField[2] = 2; // top right
+    mineField[6] = 3; // bottom left
+    mineField[8] = 4; // bottom right
+    // Generate mines.
   }
   List<int> mineField;
+  int rows;
+  int columns;
+  int mines;
 
   int _getElement(int x, int y) {
     if (_isInBounds(x, y)) throw ArgumentError('Out of bounds!');
@@ -61,21 +71,40 @@ class _MineFieldState extends State<MineField> {
   }
 
   bool _isInBounds(int x, int y) {
-    return x >= 0 && x < widget.columns
-        && y >= 0 && y < widget.rows;
-  }
-
-  Widget _getMineField() {
-    return Column(
-      children: this.mineField.map((int index) => Text('0')).toList(),
-    );
+    return x >= 0 && x < this.columns && y >= 0 && y < this.rows;
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
-      child: _getMineField(),
+      child: getMineField(),
     );
+  }
+
+  Widget getMineField() {
+    return Column(
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: getRows(),
+    );
+  }
+
+  List<Widget> getRows() {
+    List<Widget> rows = new List(this.rows);
+    for (int i = 0; i < this.rows; i++) {
+      int rowStart = i * this.rows;
+      var children = this
+          .mineField
+          .sublist(rowStart, rowStart + 3)
+          .map((int index) => Tile())
+          .toList();
+
+      rows[i] = Row(
+        mainAxisSize: MainAxisSize.max,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: children,
+      );
+    }
+    return rows;
   }
 }
