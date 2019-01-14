@@ -224,10 +224,13 @@ class _BoardState extends State<Board> {
     );
   }
 
+  /// Transform the list into rows and build them in the minefield
   List<Widget> _buildRows() {
     List<Widget> rows = new List(widget.rows);
     for (int i = 0; i < widget.rows; i++) {
-      rows[i] = _buildRow(_getRow(i * widget.rows)
+      // 
+      var row = _getRow(i * widget.cols);
+      rows[i] = _buildRow(row
           .map((TileInfo info) => Tile(
               info: info, gameOver: gameOver, onProbe: probe, onFlag: flag))
           .toList());
@@ -235,8 +238,15 @@ class _BoardState extends State<Board> {
     return rows;
   }
 
+  /// Return a row, starting at rowStart and ending at rowStart + cols - 1
+  /// 
+  /// 3x2 example
+  ///
+  /// 1. 0, 1
+  /// 2. 2, 3
+  /// 3. 4, 5
   List<TileInfo> _getRow(int rowStart) {
-    return tiles.info.sublist(rowStart, rowStart + widget.cols);
+    return tiles.info.sublist(rowStart, rowStart + widget.cols - 1);
   }
 
   Widget _buildRow(List<Tile> tiles) {
