@@ -26,7 +26,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  Board myBoard = Board(rows: 7, columns: 7, mines: 6);
+  Board myBoard = Board(rows: 7, cols: 7, mines: 6);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,5 +37,3 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-
-class GameOverNotification extends Notification {}

@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:vibrate/vibrate.dart';
 import 'dart:math';
 import 'tile.dart';
+import 'package:fireworks/fireworks.dart';
 
 @visibleForTesting
 class Tiles {
-  Tiles(this.info, this._rows, this._columns);
+  Tiles(this.info, this._rows, this._cols);
   final List<TileInfo> info;
-  final int _rows;
-  final int _columns;
+  final int _rows, _cols;
 
   /// Performs the provided function on all valid neighbors.
   @visibleForTesting
@@ -37,10 +37,10 @@ class Tiles {
   int getIx(int ix, BoardDirection dir) {
     switch (dir) {
       case BoardDirection.up:
-        ix -= _columns;
+        ix -= _cols;
         break;
       case BoardDirection.down:
-        ix += _columns;
+        ix += _cols;
         break;
       case BoardDirection.left:
         if (ix % _rows == 0) {
@@ -63,10 +63,8 @@ class Tiles {
 }
 
 class Board extends StatefulWidget {
-  Board({Key key, this.rows, this.columns, this.mines}) : super(key: key);
-  final int rows;
-  final int columns;
-  final int mines;
+  Board({Key key, this.rows, this.cols, this.mines}) : super(key: key);
+  final int rows, cols, mines;
 
   @override
   _BoardState createState() => _BoardState();
@@ -74,8 +72,8 @@ class Board extends StatefulWidget {
 
 class _BoardState extends State<Board> {
   Tiles tiles;
+  int probedCount = 0;
   bool gameOver = false;
-  bool won = false;
 
   @override
   void initState() {
@@ -84,7 +82,7 @@ class _BoardState extends State<Board> {
   }
 
   List<TileInfo> _generateTiles() {
-    return List.generate(widget.rows * widget.columns, (int index) {
+    return List.generate(widget.rows * widget.cols, (int index) {
       return TileInfo(index);
     });
   }
@@ -92,7 +90,7 @@ class _BoardState extends State<Board> {
   void _setMines() {
     var rng = new Random();
     for (int i = 0; i < widget.mines; i++) {
-      int ix = rng.nextInt(widget.rows * widget.columns);
+      int ix = rng.nextInt(widget.rows * widget.cols);
 
       if (tiles.info[ix].mode == TileMode.initial) {
         tiles.info[ix].mode = TileMode.initialMine;
@@ -103,48 +101,110 @@ class _BoardState extends State<Board> {
     }
   }
 
-  void _resetBoard() {
-    setState(() => gameOver = false);
-    tiles = Tiles(_generateTiles(), widget.rows, widget.columns);
-    _setMines();
+  void _genTiles() {
+    tiles = Tiles(_generateTiles(), widget.rows, widget.cols);
+    probedCount = 0;
   }
 
-  void _probe(int ix) {
+  void _resetBoard() {
+    _genTiles();
+    _setMines();
+    gameOver = false;
+  }
+
+  bool gameWon() => tiles.info.length - probedCount == widget.mines;
+
+  /// Check whether a tile contains a mine. Game is over if a tile with a mine is probed.
+  void probe(int ix) {
     if (gameOver) return;
 
     var tile = tiles.info[ix];
     if (tile.mode == TileMode.initial || tile.mode == TileMode.initialMine) {
-      setState(() {
-        if (tile.mode == TileMode.initialMine) {
+      if (tile.mode == TileMode.initialMine) {
+        setState(() {
           tile.mode = TileMode.probedMine;
           gameOver = true;
-          Vibrate.vibrate();
-        } else {
+        });
+        Vibrate.vibrate();
+      } else {
+        setState(() {
           tile.mode = TileMode.probed;
-          if (tile.mineCount == 0) {
-            tiles.onNeighbors(ix, _probe);
+          probedCount++;
+          if (gameWon()) {
+            gameOver = true;
           }
-        }
-      });
+          if (tile.mineCount == 0) {
+            tiles.onNeighbors(ix, probe);
+          }
+        });
+      }
+    }
+  }
+
+  /// Places a flag upon a tile, marking a mine.
+  void flag(int ix) {
+    if (gameOver) return;
+
+    var vibrate = true;
+    var tile = tiles.info[ix];
+    switch (tile.mode) {
+      case TileMode.initial:
+        setState(() => tile.mode = TileMode.flagged);
+        break;
+      case TileMode.initialMine:
+        setState(() {
+          tile.mode = TileMode.flaggedMine;
+        });
+        break;
+      case TileMode.flagged:
+        setState(() => tile.mode = TileMode.initial);
+        break;
+      case TileMode.flaggedMine:
+        setState(() {
+          tile.mode = TileMode.initialMine;
+        });
+        break;
+      case TileMode.probed:
+      case TileMode.probedMine:
+        vibrate = false;
+        break;
+    }
+
+    if (vibrate) {
+      Vibrate.feedback(FeedbackType.heavy);
     }
   }
 
   void _tryUpdate(int ix) {
-    if (ix < 0 || ix >= widget.rows * widget.columns) {
+    if (ix < 0 || ix >= widget.rows * widget.cols) {
       return;
     }
 
     tiles.info[ix].mineCount++;
   }
 
+  Widget buildFireworks() {
+    if (gameOver && gameWon()) {
+      return Fireworks(
+        delay: 1,
+        numberOfExplosions: 3,
+      );
+    } else {
+      return Container();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Container(
-      child: Column(children: [
-        Expanded(child: _getMineField()),
-        _buildResetButton(),
-      ]),
-    );
+    return Stack(children: [
+      Container(
+        child: Column(children: [
+          Expanded(child: _getMineField()),
+          _buildResetButton(),
+        ]),
+      ),
+      buildFireworks(),
+    ]);
   }
 
   Widget _buildResetButton() {
@@ -168,15 +228,15 @@ class _BoardState extends State<Board> {
     List<Widget> rows = new List(widget.rows);
     for (int i = 0; i < widget.rows; i++) {
       rows[i] = _buildRow(_getRow(i * widget.rows)
-          .map((TileInfo info) =>
-              Tile(info: info, gameOver: gameOver, onProbe: _probe))
+          .map((TileInfo info) => Tile(
+              info: info, gameOver: gameOver, onProbe: probe, onFlag: flag))
           .toList());
     }
     return rows;
   }
 
   List<TileInfo> _getRow(int rowStart) {
-    return tiles.info.sublist(rowStart, rowStart + widget.columns);
+    return tiles.info.sublist(rowStart, rowStart + widget.cols);
   }
 
   Widget _buildRow(List<Tile> tiles) {

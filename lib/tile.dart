@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:vibrate/vibrate.dart';
 
 class TileInfo {
   TileInfo(this.ix);
@@ -19,14 +18,19 @@ enum TileMode {
 }
 
 class Tile extends StatefulWidget {
-  Tile({Key key, this.info, this.gameOver, this.onProbe}) : super(key: key);
+  Tile({Key key, this.info, this.gameOver, this.onProbe, this.onFlag}) : super(key: key);
 
   final TileInfo info;
   final bool gameOver;
   final void Function(int) onProbe;
+  final void Function(int) onFlag;
 
   void probe() {
     onProbe(info.ix);
+  }
+
+  void flag() {
+    onFlag(info.ix);
   }
 
   @override
@@ -59,11 +63,12 @@ class _TileState extends State<Tile> {
         return buildTile('🚩');
       case TileMode.probedMine:
         return buildTile('💥');
+      default: // If null
+        throw Exception("Mode is null.");
     }
   }
 
   Color getBackground() {
-    var g = widget.gameOver;
     switch (widget.info.mode) {
       case TileMode.initial:
         return Colors.grey[500];
@@ -77,13 +82,15 @@ class _TileState extends State<Tile> {
         return Colors.grey[400];
       case TileMode.probedMine:
         return Colors.red;
+      default:
+        throw Exception("Color is null!");
     }
   }
 
   Widget buildTile(String text) {
     return GestureDetector(
       onTap: widget.probe,
-      onLongPress: setFlag,
+      onLongPress: widget.flag,
       child: Container(
         child: Text(text, textAlign: TextAlign.center),
         decoration: BoxDecoration(
@@ -96,27 +103,5 @@ class _TileState extends State<Tile> {
         margin: EdgeInsets.all(2.5),
       ),
     );
-  }
-
-  void setFlag() {
-    bool vibrate = true;
-    switch (widget.info.mode) {
-      case TileMode.initial:
-      case TileMode.initialMine:
-        setState(() => widget.info.mode = TileMode.flagged);
-        break;
-      case TileMode.flagged:
-      case TileMode.flaggedMine:
-        setState(() => widget.info.mode = TileMode.initial);
-        break;
-      case TileMode.probed:
-      case TileMode.probedMine:
-        vibrate = false;
-        break;
-    }
-
-    if (vibrate) {
-      Vibrate.feedback(FeedbackType.heavy);
-    }
   }
 }
