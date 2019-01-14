@@ -228,7 +228,6 @@ class _BoardState extends State<Board> {
   List<Widget> _buildRows() {
     List<Widget> rows = new List(widget.rows);
     for (int i = 0; i < widget.rows; i++) {
-      // 
       var row = _getRow(i * widget.cols);
       rows[i] = _buildRow(row
           .map((TileInfo info) => Tile(
@@ -238,15 +237,9 @@ class _BoardState extends State<Board> {
     return rows;
   }
 
-  /// Return a row, starting at rowStart and ending at rowStart + cols - 1
-  /// 
-  /// 3x2 example
-  ///
-  /// 1. 0, 1
-  /// 2. 2, 3
-  /// 3. 4, 5
+  /// Return a row, starting at rowStart and ending at (not including) rowStart + cols
   List<TileInfo> _getRow(int rowStart) {
-    return tiles.info.sublist(rowStart, rowStart + widget.cols - 1);
+    return tiles.info.sublist(rowStart, rowStart + widget.cols);
   }
 
   Widget _buildRow(List<Tile> tiles) {
