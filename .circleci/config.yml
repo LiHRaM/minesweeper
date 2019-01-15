@@ -5,9 +5,39 @@ jobs:
       - image: cirrusci/flutter:latest
     steps:
       - checkout
-      - run: flutter test
+      - run:
+          command: flutter test
+  build:
+    docker:
+      - image: cirrusci/flutter:latest
+    steps:
+      - checkout
+      - run:
+          command: flutter build apk
+  release:
+    docker:
+      - image: cirrusci/flutter:latest
+    steps:
+      - checkout
+      - run:
+          name: Release
+          command: |
+            flutter build apk --release
+      - store_artifacts:
+          path: build/app/outputs/apk/app.apk
+          destination: android_app
 workflows:
   version: 2
-  test:
+  build_and_test:
     jobs:
+      - build
       - test
+  test_and_release:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /^v.*/
+      - release:
+          requires:
+            - test
