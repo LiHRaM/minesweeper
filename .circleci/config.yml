@@ -22,6 +22,7 @@ jobs:
       - run:
           name: Release
           command: |
+            flutter test
             flutter build apk --release
       - store_artifacts:
           path: build/app/outputs/apk/app.apk
@@ -34,13 +35,7 @@ workflows:
       - test
   test_and_release:
     jobs:
-      - test:
-          filters:
-            tags:
-              only: /^v.*/
       - release:
           filters:
             tags:
               only: /^v.*/
-          requires:
-            - test
