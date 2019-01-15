@@ -39,5 +39,8 @@ workflows:
             tags:
               only: /^v.*/
       - release:
+          filters:
+            tags:
+              only: /^v.*/
           requires:
             - test
