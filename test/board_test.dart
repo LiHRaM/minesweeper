@@ -67,5 +67,48 @@ void main() {
         expect(e(tiles), [0, 0, 0, 0, 1, 1, 0, 1, 0]);
       });
     });
+
+    group("asymmetrical getIx tests", () {
+      var tiles = Tiles(infoStub(6), 2, 3);
+      // Shape:
+      // 0 0 0
+      // 0 0 0 
+
+      test("Top left corner up", () {
+        var ix = tiles.getIx(0, BoardDirection.up);
+        expect(ix, -1);
+      });
+      test("Top left corner left", () {
+        var ix = tiles.getIx(0, BoardDirection.left);
+        expect(ix, -1);
+      });
+
+      test("Top right corner up", () {
+        var ix = tiles.getIx(2, BoardDirection.up);
+        expect(ix, -1);
+      });
+      test("Top right corner right", () {
+        var ix = tiles.getIx(2, BoardDirection.right);
+        expect(ix, -1);
+      });
+
+      test("Bottom left corner down", () {
+        var ix = tiles.getIx(3, BoardDirection.down);
+        expect(ix, -1);
+      });
+      test("Bottom left corner left", () {
+        var ix = tiles.getIx(3, BoardDirection.left);
+        expect(ix, -1);
+      });
+
+      test("Bottom right corner down", () {
+        var ix = tiles.getIx(5, BoardDirection.down);
+        expect(ix, -1);
+      });
+      test("Top right corner right", () {
+        var ix = tiles.getIx(5, BoardDirection.right);
+        expect(ix, -1);
+      });
+    });
   });
 }

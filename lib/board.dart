@@ -13,6 +13,10 @@ class Tiles {
   /// Performs the provided function on all valid neighbors.
   @visibleForTesting
   void onNeighbors(int ix, void Function(int) callback) {
+    if (ix >= info.length || ix < 0) {
+      throw "Invalid index";
+    }
+
     List<int> neighbors = List();
 
     neighbors.addAll([
@@ -43,13 +47,13 @@ class Tiles {
         ix += _cols;
         break;
       case BoardDirection.left:
-        if (ix % _rows == 0) {
+        if (ix % _cols == 0) {
           ix = -1;
         }
         ix--;
         break;
       case BoardDirection.right:
-        if (ix % _rows == _rows - 1) {
+        if (ix % _cols == _cols - 1) {
           ix = -1;
         } else {
           ix++;
